@@ -4,11 +4,6 @@ import zipfile
 import time
 from asoc import ASoC
 
-# for testing set the env vars
-os.environ["ASOC_ORG_NAME"] = "Altoro Mutual"
-os.environ["ASOC_PROJECT_NAME"] = "Juice Shop5"
-os.environ["ASOC_TARGET_DIR"] = "C:\Sample Applications\SAP ABAP Code"
-
 required_args = [
     "ASOC_ORG_NAME",
     "ASOC_PROJECT_NAME",
