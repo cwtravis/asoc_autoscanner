@@ -5,10 +5,8 @@ from asoc import ASoC
 
 # for testing set the env vars
 os.environ["ASOC_ORG_NAME"] = "Altoro Mutual"
-os.environ["ASOC_PROJECT_NAME"] = "Juice Shop2"
-os.environ["ASOC_TARGET_DIR"] = "C:\Sample Applications\juice-shop"
-os.environ["ASOC_API_KEY_ID"] = "d959529f-ee86-6e53-8574-3a1928c8cda8"
-os.environ["ASOC_API_KEY_SECRET"] = "eC6ErNsfXpdsKnjDPlJpepDq5U9PsEq9sknhcvRWeR8="
+os.environ["ASOC_PROJECT_NAME"] = "Juice Shop4"
+os.environ["ASOC_TARGET_DIR"] = "C:\Sample Applications\COBOL-Fibonacci-Sequence"
 
 required_args = [
     "ASOC_ORG_NAME",
@@ -31,12 +29,14 @@ directory = os.environ["ASOC_TARGET_DIR"]
 api_key_id = os.environ["ASOC_API_KEY_ID"]
 api_key_secret = os.environ["ASOC_API_KEY_SECRET"]
 app_id = None
-scantarget_zip = "scantarget.zip"
 
 print(f"Org Name: {org_name}")
 print(f"Project Name: {project_name}")
 print(f"Target Directory: {directory}")
 print(f"ASOC API Key: **provided**")
+
+scantarget_zip = project_name + "_" + ASoC.getTimeStamp() + ".zip"
+print(f"Target Zip File: {scantarget_zip}")
 
 # Check Project Name exists as App
 asoc = ASoC(api_key_id, api_key_secret)
@@ -53,8 +53,21 @@ if asoc.login():
     else:
         # Need to create the app
         # ToDo: Find AssetGroupId of Default Asset Group
-        asoc.createApp(project_name)
-    asoc.logout()
+        code, json_obj = asoc.getAssetGroup(filter_default=True)
+        if code != 200:
+            print("Could not get Default AssetGroup Id")
+            sys.exit(1)
+        default_asset_group_id = json_obj[0]["Id"]
+        code, json_obj = asoc.createApp(project_name, default_asset_group_id)
+        if code >= 300:
+            print(f"Could not create application in ASoC: {project_name} in asset_group {default_asset_group_id}")
+            print(f"Invalid Status Code: {code}")
+            print(json_obj)
+            sys.exit(1)
+        app_id = json_obj['Id']
+        print(f"Created App [{project_name} - {app_id}]")
+            
+    
 else:
     print("ASoC API Key Login was unsuccessful. Bad API key?")
     sys.exit(1)
@@ -73,6 +86,17 @@ with zipfile.ZipFile(scantarget_zip, "w", zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(os.path.join(root, file), 
                 os.path.relpath(os.path.join(root, file), 
                 os.path.join(directory, '..')))
-            
+
 file_size = os.path.getsize(scantarget_zip)
 print("File Size is :", file_size, "bytes")
+
+print("Uploading zip to ASoC")
+code, json_obj = asoc.uploadFile(scantarget_zip)
+if code >= 300:
+    print("Error uploading zip file.")
+    print(f"Invalid Response Code: {code}")
+    print(json_obj)
+    sys.exit(1)
+
+print(code)
+print(json_obj)

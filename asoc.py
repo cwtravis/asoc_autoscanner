@@ -1,7 +1,7 @@
 import requests
 import time
 import datetime
-import json
+import os
 
 class ASoC:
     def __init__(self, apikey_id, apikey_secret):
@@ -57,31 +57,55 @@ class ASoC:
             json_obj = resp.json()
         return (resp.status_code, json_obj)
     
-    def getAssetGroup(self, name="Default"):
+    def getAssetGroup(self, name=None, filter_default=False):
+        json_obj = None
         headers = {
             "Accept": "application/json",
             "Authorization": "Bearer "+self.token
         }
-        app_info = {
-            "Name": name,
-            "AssetGroupId": "8a38b653-1695-e711-80ba-002324b5f40c"
+        if name is not None:
+            filter_str = f"name eq '{name}'" 
+        else:
+            filter_str = ""
+        if filter_default:
+            if len(filter_str)>0:
+                filter_str += " and "
+            filter_str += "IsDefault eq true"
+        data = {
+            "$filter": filter_str
         }
-        resp = requests.post("https://cloud.appscan.com/api/V2/Apps", json=app_info, headers=headers)
-        print(resp.status_code)
-        print(resp.text)
+        resp = requests.get("https://cloud.appscan.com/api/V2/AssetGroups", headers=headers, params=data)
+        if resp.status_code >= 200 and resp.status_code < 400:
+            json_obj = resp.json()
+        return (resp.status_code, json_obj)
 
-    def createApp(self, name):
+    def createApp(self, name, asset_group_id):
         headers = {
             "Accept": "application/json",
             "Authorization": "Bearer "+self.token
         }
         app_info = {
             "Name": name,
-            "AssetGroupId": "8a38b653-1695-e711-80ba-002324b5f40c"
+            "AssetGroupId": asset_group_id
         }
         resp = requests.post("https://cloud.appscan.com/api/V2/Apps", json=app_info, headers=headers)
+        return resp.status_code, resp.json()
+
+    def uploadFile(self, file_path):
+        file_name = os.path.basename(file_path)
+        print(file_name)
+        headers = {
+            "Accept": "application/json",
+            "Authorization": "Bearer "+self.token
+        }
+        params = {
+            "fileType": "SourceCodeArchive"
+        }
+        files = {'file': (file_name, open(file_path, 'rb'), 'application/x-zip-compressed')}
+        resp = requests.post("https://cloud.appscan.com/api/V2/Apps", headers=headers, params=params, files=files)
         print(resp.status_code)
         print(resp.text)
+        return resp.status_code, resp.json()
 
     @staticmethod
     #Get current system timestamp
