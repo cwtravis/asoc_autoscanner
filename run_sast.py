@@ -1,12 +1,13 @@
 import os
 import sys
 import zipfile
+import time
 from asoc import ASoC
 
 # for testing set the env vars
 os.environ["ASOC_ORG_NAME"] = "Altoro Mutual"
-os.environ["ASOC_PROJECT_NAME"] = "Juice Shop4"
-os.environ["ASOC_TARGET_DIR"] = "C:\Sample Applications\COBOL-Fibonacci-Sequence"
+os.environ["ASOC_PROJECT_NAME"] = "Juice Shop5"
+os.environ["ASOC_TARGET_DIR"] = "C:\Sample Applications\SAP ABAP Code"
 
 required_args = [
     "ASOC_ORG_NAME",
@@ -20,7 +21,7 @@ required_args = [
 for arg in required_args:
     if arg not in os.environ:
         print(f"Required env variable not found: {arg}")
-        print("Please specify all required env variabls. They are:\n"+", ".join(required_args))
+        print("Please specify all required env vars. They are:\n"+", ".join(required_args))
         sys.exit(1)
 
 org_name = os.environ["ASOC_ORG_NAME"]
@@ -98,5 +99,49 @@ if code >= 300:
     print(json_obj)
     sys.exit(1)
 
-print(code)
-print(json_obj)
+file_id = json_obj["FileId"]
+print(f"Zip file uploaded - FileId: {file_id}")
+print("Creating SAST Scan")
+code, json_obj = asoc.sastScan(file_id, app_id, scantarget_zip)
+if code >= 300:
+    print("Error creating scan.")
+    print(f"Invalid Response Code: {code}")
+    print(json_obj)
+    sys.exit(1)
+
+scan_id = json_obj["Id"]
+print(f"Scan Created: Id [{scan_id}]")
+print("waiting for the scan to complete")
+
+# Wait for scan to complete
+old_status = ""
+status = asoc.scanStatus(scan_id)
+while status not in ["Paused", "Ready", "Failed"]:
+    if old_status != status :
+        print(f"Status: {status}")
+        old_status = status
+    time.sleep(15)
+    status = asoc.scanStatus(scan_id)
+
+print("Scan Complete")
+code, json_obj = asoc.scanDetails(scan_id)
+if code >= 300:
+    print("Error getting scan details")
+    print(json_obj)
+    sys.exit(1)
+
+NIssuesFound = json_obj["LatestExecution"]["NIssuesFound"]
+NCriticalIssues = json_obj["LatestExecution"]["NCriticalIssues"]
+NHighIssues = json_obj["LatestExecution"]["NHighIssues"]
+NMediumIssues = json_obj["LatestExecution"]["NMediumIssues"]
+NLowIssues = json_obj["LatestExecution"]["NLowIssues"]
+NInfoIssues = json_obj["LatestExecution"]["NInfoIssues"]
+
+print("Scan Summary:")
+print(f"\tCritical: {NCriticalIssues}")
+print(f"\tHigh: {NHighIssues}")
+print(f"\tMed: {NMediumIssues}")
+print(f"\tLow: {NLowIssues}")
+print(f"\tInfo: {NInfoIssues}")
+print()
+print(f"Total Issues: {NIssuesFound}")

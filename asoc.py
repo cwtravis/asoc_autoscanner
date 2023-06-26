@@ -98,15 +98,39 @@ class ASoC:
             "Accept": "application/json",
             "Authorization": "Bearer "+self.token
         }
-        params = {
-            "fileType": "SourceCodeArchive"
-        }
-        files = {'file': (file_name, open(file_path, 'rb'), 'application/x-zip-compressed')}
-        resp = requests.post("https://cloud.appscan.com/api/V2/Apps", headers=headers, params=params, files=files)
-        print(resp.status_code)
-        print(resp.text)
+        files = {"fileToUpload":(file_name, open(file_path, 'rb'), 'application/x-zip-compressed')}
+        resp = requests.post("https://cloud.appscan.com/api/V2/FileUpload?fileType=SourceCodeArchive", headers=headers, files=files)
         return resp.status_code, resp.json()
 
+    def sastScan(self, file_id, app_id, scan_name="SAST Scan"):
+        headers = {
+            "Accept": "application/json",
+            "Authorization": "Bearer "+self.token
+        }
+        data = {
+            "ApplicationFileId": file_id,
+            "ScanName": scan_name,
+            "EnableMailNotification": False,
+            "AppId": app_id
+        }
+        resp = requests.post("https://cloud.appscan.com/api/V2/Scans/StaticAnalyzer", headers=headers, data=data)
+        return resp.status_code, resp.json()
+
+    def scanDetails(self, scan_id):
+        headers = {
+            "Accept": "application/json",
+            "Authorization": "Bearer "+self.token
+        }
+        resp = requests.get(f"https://cloud.appscan.com/api/V2/Scans/{scan_id}", headers=headers)
+        return resp.status_code, resp.json()
+    
+    def scanStatus(self, scan_id):
+        code, json_obj = self.scanDetails(scan_id)
+        if code >= 300:
+            return "Error"
+        else:
+            return json_obj["LatestExecution"]["Status"]
+    
     @staticmethod
     #Get current system timestamp
     def getTimeStamp():
