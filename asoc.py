@@ -126,10 +126,11 @@ class ASoC:
     
     def scanStatus(self, scan_id):
         code, json_obj = self.scanDetails(scan_id)
+        if code == 403:
+            return "Cancelled"
         if code >= 300:
             return "Error"
-        else:
-            return json_obj["LatestExecution"]["Status"]
+        return json_obj["LatestExecution"]["Status"]
     
     @staticmethod
     #Get current system timestamp
