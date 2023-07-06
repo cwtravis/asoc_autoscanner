@@ -28,6 +28,29 @@ api_key_id = os.environ["ASOC_API_KEY_ID"]
 api_key_secret = os.environ["ASOC_API_KEY_SECRET"]
 app_id = None
 
+# Check for proxies
+proxies = {}
+http_proxy = None
+https_proxy = None
+if "HTTP_PROXY" in os.environ.keys():
+    http_proxy = os.environ["HTTP_PROXY"]
+    if "http://" not in http_proxy:
+        http_proxy = f"http://{http_proxy}"
+        proxies["http"] = http_proxy
+
+if "HTTPS_PROXY" in os.environ.keys():
+    https_proxy = os.environ["HTTPS_PROXY"]
+    if "https://" not in https_proxy:
+        https_proxy = f"https://{https_proxy}"
+        proxies["https"] = https_proxy
+
+if len(proxies.keys()) == 0:
+    proxies = None
+else:
+    print("Proxy Info:")
+    print(proxies)
+
+
 print("HCL AppScan on Cloud - Run SAST")
 print("------------------------------")
 print(f"Org Name: {org_name}")
@@ -44,7 +67,7 @@ print(f"Zip File: {scantarget_zip_path}")
 print("------------------------------")
 
 # Check Project Name exists as App
-asoc = ASoC(api_key_id, api_key_secret)
+asoc = ASoC(api_key_id, api_key_secret, proxies=proxies)
 if asoc.login():
     code, json_obj = asoc.getApps(project_name)
     if code != 200:
