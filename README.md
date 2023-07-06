@@ -14,6 +14,10 @@ Environment variables are used to configure the script. They are specified below
 | ASOC_API_KEY_ID  | The AppScan on Cloud API Key ID  | Yes |
 | ASOC_API_KEY_SECRET  | The AppScan on Cloud API Key Secret  | Yes |
 
+Added support for HTTP_PROXY and HTTPS_PROXY environment variables. 
+
+Example: `HTTPS_PROXY=123.123.123.123:4444`
+
 AppScan on Cloud API Key may be generated inside the AppScan on Cloud portal via the menu Tools > API > Generate.
 
 ## Running a scan
