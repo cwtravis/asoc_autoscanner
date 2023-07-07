@@ -23,6 +23,8 @@ class ASoC:
             self.session.headers.update({"Authorization": "Bearer "+self.token})
             return True
         else:
+            print(f"Status Code: {resp.status_code}")
+            print(resp.text)
             return False
         
     def logout(self):
