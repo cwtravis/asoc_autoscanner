@@ -2,7 +2,9 @@ import os
 import sys
 import zipfile
 import time
-from asoc import ASoC
+from asoc import ASoC, ALLOW_LIST_EXTENSIONS, ALLOW_LIST_FILES
+
+start_time = time.time()
 
 required_args = [
     "ASOC_PROJECT_NAME",
@@ -65,7 +67,7 @@ scantarget_zip_path = os.path.join(cwd, scantarget_zip)
 
 print(f"Zip File: {scantarget_zip_path}")
 print("------------------------------")
-
+app_check_time = time.time()
 # Check Project Name exists as App
 asoc = ASoC(api_key_id, api_key_secret, proxies=proxies)
 if asoc.login():
@@ -104,29 +106,29 @@ if not os.path.isdir(directory):
     print("Create the directory or specify one that exists.")
     sys.exit(1)
 
+app_check_time = round(time.time()-app_check_time)
+
+zip_time = time.time()
 print("Zipping Target Directory")
-num_files = sum([len(files) for r, d, files in os.walk(directory)])
-file_count = 0
-start = time.time()
-percent = 0
 with zipfile.ZipFile(scantarget_zip, "w", zipfile.ZIP_DEFLATED) as zipf:
+    zipf.write('appscan-config.xml')
     for root, dirs, files in os.walk(directory):
         for file in files:
-            file_count += 1
-            zipf.write(os.path.join(root, file), 
-                os.path.relpath(os.path.join(root, file), 
-                os.path.join(directory, '..')))
-            if time.time()-start >= 5:
-                percent = round((file_count/num_files)*100)
-                print(f"Zip Progress: {percent}%")
-                start = time.time()
-
+            f_name, f_ext = os.path.splitext(file)
+            if file.lower() in ALLOW_LIST_FILES or f_ext in ALLOW_LIST_EXTENSIONS:
+                zipf.write(os.path.join(root, file), 
+                    os.path.relpath(os.path.join(root, file), 
+                    os.path.join(directory, '..')))
 print("Zip Complete")    
-
 file_size = os.path.getsize(scantarget_zip)
-file_size_mb = round(file_size / (1024 * 1024))
-print(f"Zip File Size: {file_size_mb}MB")
+file_size_kb = file_size / 1024
+file_size_mb = file_size_kb / 1024
+print(f"Zip File Size: {round(file_size_mb)} MB")
+zip_time = round(time.time()-zip_time)
 
+print("------------------------------")
+
+upload_time = time.time()
 print("Uploading zip to ASoC")
 code, json_obj = asoc.uploadFile(scantarget_zip)
 if code >= 300:
@@ -137,10 +139,15 @@ if code >= 300:
 
 file_id = json_obj["FileId"]
 print(f"Zip file uploaded: FileId [{file_id}]")
+upload_time = round(time.time()-upload_time)
+
+print("------------------------------")
+scan_time = time.time()
+
 print("Creating SAST Scan")
 code, json_obj = asoc.sastScan(file_id, app_id, scantarget_zip)
 if code >= 300:
-    print("Error creating scan.")
+    print("Error creating scan")
     print(f"Invalid Response Code: {code}")
     print(json_obj)
     sys.exit(1)
@@ -176,6 +183,8 @@ if code >= 300:
     print("Error getting scan details")
     print(json_obj)
     sys.exit(1)
+scan_time = round(time.time()-scan_time)
+print("------------------------------")
 
 NIssuesFound = json_obj["LatestExecution"]["NIssuesFound"]
 NCriticalIssues = json_obj["LatestExecution"]["NCriticalIssues"]
@@ -195,3 +204,11 @@ print(f"Total Issues: {NIssuesFound}")
 
 # Logout of ASoC
 asoc.logout()
+
+elapsed_time = round(time.time()-start_time)
+print(f"Runtime Summary: ")
+print(f"\t App Check Time: {app_check_time} sec")
+print(f"\t Zip Time: {zip_time} sec")
+print(f"\t Upload Time: {upload_time} sec")
+print(f"\t Scan Time: {scan_time} sec")
+print(f"\t Total Time: {elapsed_time} sec")

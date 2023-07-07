@@ -1,0 +1,5 @@
+<Configuration sourceCodeOnly="true" staticAnalysisOnly="true">
+    <Targets>
+        <Target path="." />
+    </Targets>
+</Configuration>
