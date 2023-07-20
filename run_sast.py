@@ -2,9 +2,11 @@ import os
 import sys
 import zipfile
 import time
-from asoc import ASoC, ALLOW_LIST_EXTENSIONS, ALLOW_LIST_FILES
+from asoc import ASoC, ALLOW_LIST_EXTENSIONS, ALLOW_LIST_FILES, CONFIG_XML
 
 start_time = time.time()
+
+FULLY_AUTOMATIC = True
 
 required_args = [
     "ASOC_PROJECT_NAME",
@@ -102,7 +104,7 @@ else:
 
 # Check Target Directory Exists
 if not os.path.isdir(directory):
-    print(f"Target Direcotry {directory} does not exist.")
+    print(f"Target Directory {directory} does not exist.")
     print("Create the directory or specify one that exists.")
     sys.exit(1)
 
@@ -111,7 +113,7 @@ app_check_time = round(time.time()-app_check_time)
 zip_time = time.time()
 print("Zipping Target Directory")
 with zipfile.ZipFile(scantarget_zip, "w", zipfile.ZIP_DEFLATED) as zipf:
-    zipf.write('appscan-config.xml')
+    zipf.writestr('appscan-config.xml', CONFIG_XML)
     for root, dirs, files in os.walk(directory):
         for file in files:
             f_name, f_ext = os.path.splitext(file)
@@ -145,7 +147,7 @@ print("------------------------------")
 scan_time = time.time()
 
 print("Creating SAST Scan")
-code, json_obj = asoc.sastScan(file_id, app_id, scantarget_zip)
+code, json_obj = asoc.sastScan(file_id, app_id, scantarget_zip, FULLY_AUTOMATIC)
 if code >= 300:
     print("Error creating scan")
     print(f"Invalid Response Code: {code}")

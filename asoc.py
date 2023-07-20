@@ -84,12 +84,13 @@ class ASoC:
         resp = self.session.post("https://cloud.appscan.com/api/V2/FileUpload?fileType=SourceCodeArchive", files=files)
         return resp.status_code, resp.json()
 
-    def sastScan(self, file_id, app_id, scan_name="SAST Scan"):
+    def sastScan(self, file_id, app_id, scan_name="SAST Scan", automatic=False):
         data = {
             "ApplicationFileId": file_id,
             "ScanName": scan_name,
             "EnableMailNotification": False,
-            "AppId": app_id
+            "AppId": app_id,
+            "FullyAutomatic": automatic
         }
         resp = self.session.post("https://cloud.appscan.com/api/V2/Scans/StaticAnalyzer", data=data)
         return resp.status_code, resp.json()
@@ -99,7 +100,10 @@ class ASoC:
         return resp.status_code, resp.json()
     
     def scanStatus(self, scan_id):
-        resp = self.session.get(f"https://cloud.appscan.com/api/V2/Scans/{scan_id}")
+        try:
+            resp = self.session.get(f"https://cloud.appscan.com/api/V2/Scans/{scan_id}")
+        except  requests.exceptions.ConnectionError:
+            return "Error"
         if resp.status_code == 403:
             return "Cancelled"
         if resp.status_code >= 300:
@@ -403,3 +407,10 @@ ALLOW_LIST_FILES = [
     "php.ini",
     "httpd.conf"
 ]
+
+CONFIG_XML = """<Configuration sourceCodeOnly="true" staticAnalysisOnly="true">
+    <Targets>
+        <Target path="." />
+    </Targets>
+</Configuration>
+"""
