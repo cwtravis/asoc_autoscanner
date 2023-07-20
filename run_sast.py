@@ -6,7 +6,8 @@ from asoc import ASoC, ALLOW_LIST_EXTENSIONS, ALLOW_LIST_FILES, CONFIG_XML
 
 start_time = time.time()
 
-FULLY_AUTOMATIC = True
+#Fully Automatic will prevent scans from being picked up by scan enablers
+FULLY_AUTOMATIC = False
 
 required_args = [
     "ASOC_PROJECT_NAME",
