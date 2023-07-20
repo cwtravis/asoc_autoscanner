@@ -408,7 +408,7 @@ ALLOW_LIST_FILES = [
     "httpd.conf"
 ]
 
-CONFIG_XML = """<Configuration sourceCodeOnly="true" staticAnalysisOnly="true">
+CONFIG_XML = """<Configuration sourceCodeOnly="true" staticAnalysisOnly="true" noSecrets="true">
     <Targets>
         <Target path="." />
     </Targets>
