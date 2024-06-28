@@ -23,15 +23,18 @@ for arg in required_args:
         print("Please specify all required env vars. They are:\n"+", ".join(required_args))
         sys.exit(1)
 
-if "ASOC_ORG_NAME" not in os.environ.keys():
-    org_name = "Not Specified"
+if "ASOC_ASSET_GROUP" not in os.environ.keys():
+    asset_group = None
+    print("No asset group specified. Using default asset group.")
 else:
-    org_name = os.environ["ASOC_ORG_NAME"]
+    asset_group = os.environ["ASOC_ASSET_GROUP"]
+
 project_name = os.environ["ASOC_PROJECT_NAME"]
 directory = os.environ["ASOC_TARGET_DIR"]
 api_key_id = os.environ["ASOC_API_KEY_ID"]
 api_key_secret = os.environ["ASOC_API_KEY_SECRET"]
 app_id = None
+asset_group_id = None
 
 # Check for proxies
 proxies = {}
@@ -58,8 +61,11 @@ else:
 
 print("HCL AppScan on Cloud - Run SAST")
 print("------------------------------")
-print(f"Org Name: {org_name}")
 print(f"Project Name: {project_name}")
+if asset_group is None:
+    print(f"Asset Group: Default")
+else:
+    print(f"Asset Group: {asset_group}")
 print(f"Target Directory: {directory}")
 print(f"ASOC API Key: **provided**")
 
@@ -85,15 +91,24 @@ if asoc.login():
         print(f"App [{project_name}] Exists: [{app_id}]")
     else:
         # Need to create the app
-        # ToDo: Find AssetGroupId of Default Asset Group
-        code, json_obj = asoc.getAssetGroup(filter_default=True)
-        if code != 200:
-            print("Could not get Default AssetGroup Id")
-            sys.exit(1)
-        default_asset_group_id = json_obj[0]["Id"]
-        code, json_obj = asoc.createApp(project_name, default_asset_group_id)
+        if asset_group is None:
+            code, json_obj = asoc.getAssetGroup(filter_default=True)
+            if code != 200 or len(json_obj) == 0:
+                print("Could not get Default AssetGroup Id")
+                sys.exit(1)
+            asset_group_id = json_obj[0]["Id"]
+        else:
+            code, json_obj = asoc.createAssetGroup(asset_group)
+            if code == 201:
+                asset_group_id = json_obj["Id"]
+                print(f"Created asset group [{asset_group}][{asset_group_id}]")
+            else:
+                print("Could not create asset group! Exiting.")
+                print(json_obj)
+                sys.exit(1)
+        code, json_obj = asoc.createApp(project_name, asset_group_id)
         if code >= 300:
-            print(f"Could not create application in ASoC: {project_name} in asset_group {default_asset_group_id}")
+            print(f"Could not create application in ASoC: {project_name} in asset_group {asset_group_id}")
             print(f"Invalid Status Code: {code}")
             print(json_obj)
             sys.exit(1)

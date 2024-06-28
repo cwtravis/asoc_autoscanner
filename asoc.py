@@ -16,7 +16,7 @@ class ASoC:
         self.session.headers.update({"Accept": "application/json"})
     
     def login(self):
-        resp = self.session.post("https://cloud.appscan.com/api/V2/Account/ApiKeyLogin", json=self.apikey)
+        resp = self.session.post("https://cloud.appscan.com/api/v4/Account/ApiKeyLogin", json=self.apikey)
         if(resp.status_code == 200):
             jsonObj = resp.json()
             self.token = jsonObj["Token"]
@@ -28,7 +28,7 @@ class ASoC:
             return False
         
     def logout(self):
-        resp = self.session.get("https://cloud.appscan.com/api/V2/Account/Logout")
+        resp = self.session.get("https://cloud.appscan.com/api/V4/Account/Logout")
         if(resp.status_code == 200):
             self.token = ""
             return True
@@ -36,7 +36,7 @@ class ASoC:
             return False
         
     def checkAuth(self):
-        resp = self.session.get("https://cloud.appscan.com/api/V2/Account/TenantInfo")
+        resp = self.session.get("https://cloud.appscan.com/api/V4/Account/TenantInfo")
         return resp.status_code == 200
 
     def getApps(self, name=None):
@@ -55,7 +55,7 @@ class ASoC:
     def getAssetGroup(self, name=None, filter_default=False):
         json_obj = None
         if name is not None:
-            filter_str = f"name eq '{name}'" 
+            filter_str = f"Name eq '{name}'" 
         else:
             filter_str = ""
         if filter_default:
@@ -76,6 +76,17 @@ class ASoC:
             "AssetGroupId": asset_group_id
         }
         resp = self.session.post("https://cloud.appscan.com/api/V2/Apps", json=app_info)
+        return resp.status_code, resp.json()
+    
+    def createAssetGroup(self, name, **kwargs):
+        info = {
+            "Description": kwargs.get("Description", ""),
+            "IssuesStatusInheritance": kwargs.get("IssuesStatusInheritance", "None"),
+            "ContactUserId": kwargs.get("ContactUserId", None),
+            "EnableIssuesAutoClose": kwargs.get("EnableIssuesAutoClose", True),
+            "Name": name
+        }
+        resp = self.session.post("https://cloud.appscan.com/api/v4/AssetGroups", json=info)
         return resp.status_code, resp.json()
 
     def uploadFile(self, file_path):
