@@ -25,7 +25,6 @@ for arg in required_args:
 
 if "ASOC_ASSET_GROUP" not in os.environ.keys():
     asset_group = None
-    print("No asset group specified. Using default asset group.")
 else:
     asset_group = os.environ["ASOC_ASSET_GROUP"]
 
@@ -63,6 +62,7 @@ print("HCL AppScan on Cloud - Run SAST")
 print("------------------------------")
 print(f"Project Name: {project_name}")
 if asset_group is None:
+    print("No asset group specified. Using default asset group.")
     print(f"Asset Group: Default")
 else:
     print(f"Asset Group: {asset_group}")
