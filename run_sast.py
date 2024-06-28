@@ -92,20 +92,29 @@ if asoc.login():
     else:
         # Need to create the app
         if asset_group is None:
+            # Get default asset group id
             code, json_obj = asoc.getAssetGroup(filter_default=True)
             if code != 200 or len(json_obj) == 0:
                 print("Could not get Default AssetGroup Id")
                 sys.exit(1)
             asset_group_id = json_obj[0]["Id"]
         else:
-            code, json_obj = asoc.createAssetGroup(asset_group)
-            if code == 201:
-                asset_group_id = json_obj["Id"]
-                print(f"Created asset group [{asset_group}][{asset_group_id}]")
+            #get asset group id
+            code, json_obj = asoc.getAssetGroup(asset_group)
+            if len(json_obj) == 0:
+                print("Asset group does not exist. Creating it.")
+                code, json_obj = asoc.createAssetGroup(asset_group)
+                if code == 201:
+                    asset_group_id = json_obj["Id"]
+                    print(f"Created asset group [{asset_group}][{asset_group_id}]")
+                else:
+                    print("Could not create asset group! Exiting.")
+                    print(json_obj)
+                    sys.exit(1)
             else:
-                print("Could not create asset group! Exiting.")
-                print(json_obj)
-                sys.exit(1)
+                asset_group_id = json_obj[0]["Id"]
+        print(f"Using Asset Group Id [{asset_group_id}]")
+
         code, json_obj = asoc.createApp(project_name, asset_group_id)
         if code >= 300:
             print(f"Could not create application in ASoC: {project_name} in asset_group {asset_group_id}")
